@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>منجم الذهب</title>
+  <script src="https://telegram.org/js/telegram-web-app.js"></script>
+  <style>
+    * { box-sizing: border-box; user-select: none; -webkit-tap-highlight-color: transparent; touch-action: manipulation; }
+    body {
+      margin: 0; padding: 20px; background: #121212; color: #fff;
+      font-family: -apple-system, BlinkMacSystemFont, sans-serif;
+      display: flex; flex-direction: column; align-items: center; justify-content: space-between; min-height: 100vh;
+    }
+    .header { text-align: center; margin-top: 10px; }
+    .balance { font-size: 42px; font-weight: bold; color: #ffd700; margin: 5px 0; }
+    .per-sec { font-size: 14px; color: #aaa; }
+    .coin-btn {
+      width: 190px; height: 190px; border-radius: 50%;
+      background: radial-gradient(circle, #ffdf4d, #d49b00);
+      border: 6px solid #fff3b0; font-size: 65px;
+      display: flex; align-items: center; justify-content: center;
+      box-shadow: 0 0 30px rgba(255, 215, 0, 0.3);
+      transition: transform 0.08s; cursor: pointer;
+    }
+    .coin-btn:active { transform: scale(0.92); }
+    .upgrades { width: 100%; max-width: 400px; display: flex; flex-direction: column; gap: 10px; margin-bottom: 10px; }
+    .card {
+      background: #1e1e1e; border: 1px solid #333; border-radius: 14px;
+      padding: 14px; display: flex; justify-content: space-between; align-items: center;
+    }
+    .card button {
+      background: #ffd700; color: #000; border: none; border-radius: 10px;
+      padding: 10px 14px; font-weight: bold; font-size: 14px; cursor: pointer;
+    }
+    .card button:disabled { background: #444; color: #888; }
+    .ad-btn {
+      width: 100%; max-width: 400px; background: #2ea44f; color: #fff;
+      border: none; border-radius: 12px; padding: 12px; font-size: 15px; font-weight: bold; cursor: pointer;
+    }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <div>الرصيد الحالي</div>
+    <div class="balance" id="coins">0</div>
+    <div class="per-sec">الدخل التلقائي: <span id="cps">0</span> / ثانية</div>
+  </div>
+
+  <div class="coin-btn" id="tapBtn">🪙</div>
+
+  <button class="ad-btn" id="adBtn">🎁 شاهد إعلان (+50 عملة)</button>
+
+  <div class="upgrades">
+    <div class="card">
+      <div>
+        <strong>⚡ قوة النقر (مستوى <span id="tapLvl">1</span>)</strong><br>
+        <small style="color:#aaa">+1 عملة لكل ضغطة</small>
+      </div>
+      <button id="buyTap">ترقية (<span id="tapCost">15</span>)</button>
+    </div>
+    <div class="card">
+      <div>
+        <strong>🤖 منجم تلقائي (مستوى <span id="autoLvl">0</span>)</strong><br>
+        <small style="color:#aaa">+1 عملة كل ثانية</small>
+      </div>
+      <button id="buyAuto">شراء (<span id="autoCost">50</span>)</button>
+    </div>
+  </div>
+
+  <script>
+    const tg = window.Telegram?.WebApp;
+    if (tg) { tg.ready(); tg.expand(); }
+
+    let state = JSON.parse(localStorage.getItem('goldTapSave')) || {
+      coins: 0, tapPower: 1, autoIncome: 0, tapCost: 15, autoCost: 50
+    };
+
+    function save() { localStorage.setItem('goldTapSave', JSON.stringify(state)); }
+
+    function updateUI() {
+      document.getElementById('coins').innerText = Math.floor(state.coins);
+      document.getElementById('cps').innerText = state.autoIncome;
+      document.getElementById('tapLvl').innerText = state.tapPower;
+      document.getElementById('autoLvl').innerText = state.autoIncome;
+      document.getElementById('tapCost').innerText = state.tapCost;
+      document.getElementById('autoCost').innerText = state.autoCost;
+      document.getElementById('buyTap').disabled = state.coins < state.tapCost;
+      document.getElementById('buyAuto').disabled = state.coins < state.autoCost;
+    }
+
+    document.getElementById('tapBtn').addEventListener('click', () => {
+      state.coins += state.tapPower;
+      tg?.HapticFeedback?.impactOccurred('light');
+      updateUI(); save();
+    });
+
+    document.getElementById('buyTap').addEventListener('click', () => {
+      if (state.coins >= state.tapCost) {
+        state.coins -= state.tapCost;
+        state.tapPower += 1;
+        state.tapCost = Math.floor(state.tapCost * 1.5);
+        tg?.HapticFeedback?.impactOccurred('medium');
+        updateUI(); save();
+      }
+    });
+
+    document.getElementById('buyAuto').addEventListener('click', () => {
+      if (state.coins >= state.autoCost) {
+        state.coins -= state.autoCost;
+        state.autoIncome += 1;
+        state.autoCost = Math.floor(state.autoCost * 1.6);
+        tg?.HapticFeedback?.impactOccurred('medium');
+        updateUI(); save();
+      }
+    });
+
+    // زر الإعلانات: هنا سنضع كود Adsgram لاحقاً
+    document.getElementById('adBtn').addEventListener('click', () => {
+      state.coins += 50;
+      alert('تمت إضافة 50 عملة! (هذا الزر جاهز لربط شبكة إعلانات Adsgram)');
+      updateUI(); save();
+    });
+
+    setInterval(() => {
+      if (state.autoIncome > 0) {
+        state.coins += state.autoIncome;
+        updateUI(); save();
+      }
+    }, 1000);
+
+    updateUI();
+  </script>
+</body>
+</html>
